@@ -83,7 +83,6 @@ class GOT10k(object):
         assert subset in ['train', 'val', 'test']
         if list_file is None:
             list_file = os.path.join(root_dir, subset, 'list.txt')
-
         if os.path.isfile(list_file):
             with open(list_file, 'r') as f:
                 seq_names = f.read().strip().split('\n')

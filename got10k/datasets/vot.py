@@ -105,6 +105,8 @@ class VOT(object):
                 print('Files already downloaded.')
                 return
 
+        print('Version', version)
+
         url = 'http://data.votchallenge.net/'
         if version in range(2013, 2015 + 1):
             # main challenge (2013~2015)
@@ -125,6 +127,9 @@ class VOT(object):
             year = int(version[4:])
             url = url + 'vot{}/rgbtir/'.format(year)
             homepage = url + 'meta/'
+
+        print('Year', year)
+        print('homepage', homepage)
         
         # download description file
         bundle_url = homepage + 'description.json'
@@ -151,6 +156,11 @@ class VOT(object):
         for seq in bundle['sequences']:
             seq_name = seq['name']
             seq_names.append(seq_name)
+            
+            seq_dir = os.path.join(root_dir, seq_name)
+            if(os.path.isdir(seq_dir)):
+                print('%s is already downloaded and extracted' % seq_name)
+                continue
 
             # download channel (color/depth/ir) files
             channels = seq['channels'].keys()
@@ -169,14 +179,17 @@ class VOT(object):
                 seq_files.append(seq_file)
 
             # download annotations
-            anno_url = homepage + '%s.zip' % seq_name
+            anno_url = 'https://zenodo.org/record/2640900/files/' + '%s.zip' % seq_name
             anno_file = os.path.join(root_dir, seq_name + '_anno.zip')
+
+            print('anno_url', anno_url)
+            print('anno_file', anno_file)
+
             if not os.path.isfile(anno_file) or \
                 md5(anno_file) != seq['annotations']['checksum']:
                 download(anno_url, anno_file)
 
             # unzip compressed files
-            seq_dir = os.path.join(root_dir, seq_name)
             if not os.path.isfile(seq_dir) or len(os.listdir(seq_dir)) < 10:
                 print('Extracting %s...' % seq_name)
                 os.makedirs(seq_dir)
