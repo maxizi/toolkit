@@ -12,4 +12,3 @@ build/
 dist/
 *.egg-info
 !.gitignore
-quick_examples.ipynb
