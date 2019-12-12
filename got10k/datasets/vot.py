@@ -76,12 +76,12 @@ class VOT(object):
             index = self.seq_names.index(index)
 
         img_files = sorted(glob.glob(
-        os.path.join(self.seq_dirs[index], '*.jpg')))
+        os.path.join(self.seq_dirs[index], 'color/*.jpg')))
 
         # add depth files        
         if self.version == 'RGBD2019':
             depth_files = sorted(glob.glob(
-                os.path.join(self.seq_dirs[index], '*.png')))
+                os.path.join(self.seq_dirs[index], 'depth/*.png')))
             assert len(img_files) == len(depth_files), (len(img_files), len(depth_files))
         
         anno = np.loadtxt(self.anno_files[index], delimiter=',')
