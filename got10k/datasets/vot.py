@@ -75,20 +75,36 @@ class VOT(object):
                 raise Exception('Sequence {} not found.'.format(index))
             index = self.seq_names.index(index)
 
-        img_files = sorted(glob.glob(
-            os.path.join(self.seq_dirs[index], '*.jpg')))
+        if self.version == 'RGBD2019':
+            img_files = sorted(glob.glob(
+                os.path.join(self.seq_dirs[index], 'color/*.jpg')))
+            depth_files = sorted(glob.glob(
+                os.path.join(self.seq_dirs[index], 'depth/*.png')))
+            assert len(img_files) == len(depth_files)
+        else:
+            img_files = sorted(glob.glob(
+                os.path.join(self.seq_dirs[index], '*.jpg')))
+        
         anno = np.loadtxt(self.anno_files[index], delimiter=',')
         assert len(img_files) == len(anno), (len(img_files), len(anno))
         assert anno.shape[1] in [4, 8]
         if self.anno_type == 'rect' and anno.shape[1] == 8:
             anno = self._corner2rect(anno)
 
-        if self.return_meta:
-            meta = self._fetch_meta(
-                self.seq_dirs[index], len(img_files))
-            return img_files, anno, meta
+        if self.version == 'RGBD2019':
+            if self.return_meta:
+                meta = self._fetch_meta(
+                    self.seq_dirs[index], len(img_files))
+                return img_files, depth_files, anno, meta
+            else:
+                return img_files, depth_files, anno
         else:
-            return img_files, anno
+            if self.return_meta:
+                meta = self._fetch_meta(
+                    self.seq_dirs[index], len(img_files))
+                return img_files, anno, meta
+            else:
+                return img_files, anno
 
     def __len__(self):
         return len(self.seq_names)

@@ -167,7 +167,12 @@ class ExperimentVOT(object):
         print('Running unsupervised experiment...')
 
         # loop over the complete dataset
-        for s, (img_files, anno, _) in enumerate(self.dataset):
+        for s, s_data in enumerate(self.dataset):
+            if self.dataset.version == 'RGBD2019':
+                (img_files, depth_files, anno, _) = s_data
+            else:
+                (img_files, anno, _) = s_data
+                depth_files = None
             seq_name = self.dataset.seq_names[s]
             print('--Sequence %d/%d: %s' % (s + 1, len(self.dataset), seq_name))
 
@@ -186,7 +191,7 @@ class ExperimentVOT(object):
 
             # tracking loop
             boxes, times = tracker.track(
-                img_files, anno_rects[0], visualize=visualize)
+                img_files, anno_rects[0], depth=depth_files, visualize=visualize)
             assert len(boxes) == len(anno)
 
             # re-formatting
@@ -336,7 +341,13 @@ class ExperimentVOT(object):
             times = {}
             masks = {}  # frame masks for attribute tags
 
-            for s, (img_files, anno, meta) in enumerate(self.dataset):
+            for s, s_data in enumerate(self.dataset):
+                if self.dataset.version == 'RGBD2019':
+                    (img_files, depth_files, anno, meta) = s_data
+                else:
+                    (img_files, anno, meta) = s_data
+                    depth_files = None
+
                 seq_name = self.dataset.seq_names[s]
 
                 # initialize frames scores
