@@ -362,8 +362,11 @@ class ExperimentVOT(object):
                     (self.repetitions, frame_num), np.nan, dtype=float)
 
                 # read results of all repetitions
+                print('NOTE: So far, evaluation will only be performed for one experiment. \
+                             For long-term tracking this will be the unsupervised experiment. \
+                             For short-term tracking it will be the baseline experiment.')
                 record_files = sorted(glob.glob(os.path.join(
-                    self.result_dir, name, 'baseline', seq_name,
+                    self.result_dir, name, self.experiments[0], seq_name,
                     '%s_[0-9]*.txt' % seq_name)))
                 boxes = [read_record(f) for f in record_files]
                 assert all([len(b) == len(anno) for b in boxes])
@@ -387,7 +390,7 @@ class ExperimentVOT(object):
 
                 # collect frame runtimes
                 time_file = os.path.join(
-                    self.result_dir, name, 'baseline', seq_name,
+                    self.result_dir, name, self.experiments[0], seq_name,
                     '%s_time.txt' % seq_name)
                 if os.path.exists(time_file):
                     seq_times = np.loadtxt(time_file, delimiter=',').T
