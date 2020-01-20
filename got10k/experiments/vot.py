@@ -570,19 +570,18 @@ class ExperimentVOT(object):
         with open(time_file, 'w') as f:
             f.write(str.join('\n', lines))
 
-        if confidence != None:
-            # convert confidences to string
-            lines = ['%.8f' % c for c in confidence]
-            lines = [t.replace('nan', 'NaN') for t in lines]
+        # convert confidences to string
+        lines = ['%.8f' % c for c in confidence]
+        lines = [t.replace('nan', 'NaN') for t in lines]
 
-            # record confidence scores
-            confidence_file = record_file[:record_file.rfind('_')] + '_001_confidence.value'
-            if os.path.exists(confidence_file):
-                with open(time_file) as f:
-                    exist_lines = f.read().strip().split('\n')
-                lines = [t + ',' + s for t, s in zip(exist_lines, lines)]
-            with open(confidence_file, 'w') as f:
-                f.write(str.join('\n', lines[1:]))
+        # record confidence scores
+        confidence_file = record_file[:record_file.rfind('_')] + '_001_confidence.value'
+        if os.path.exists(confidence_file):
+            with open(time_file) as f:
+                exist_lines = f.read().strip().split('\n')
+            lines = [t + ',' + s for t, s in zip(exist_lines, lines)]
+        with open(confidence_file, 'w') as f:
+            f.write(str.join('\n', lines[1:]))
 
     def _check_deterministic(self, exp, tracker_name, seq_name):
         record_dir = os.path.join(
