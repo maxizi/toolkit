@@ -13,13 +13,13 @@ class Tracker(object):
         self.name = name
         self.is_deterministic = is_deterministic
     
-    def init(self, image, box, depth=None):
+    def init(self, image, box, depthimage=None):
         raise NotImplementedError()
 
-    def update(self, image, depth=None):
+    def update(self, image, depthimage=None):
         raise NotImplementedError()
 
-    def track(self, img_files, box, depth=None, visualize=False):
+    def track(self, img_files, box, depth_files=None, visualize=False):
         frame_num = len(img_files)
         boxes = np.zeros((frame_num, 4))
         boxes[0] = box

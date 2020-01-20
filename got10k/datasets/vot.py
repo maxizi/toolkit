@@ -81,6 +81,9 @@ class VOT(object):
             depth_files = sorted(glob.glob(
                 os.path.join(self.seq_dirs[index], 'depth/*.png')))
             assert len(img_files) == len(depth_files)
+        elif self.version  == 'LT2018':
+            img_files = sorted(glob.glob(
+                os.path.join(self.seq_dirs[index], 'color/*.jpg')))
         else:
             img_files = sorted(glob.glob(
                 os.path.join(self.seq_dirs[index], '*.jpg')))

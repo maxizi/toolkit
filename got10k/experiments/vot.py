@@ -27,7 +27,7 @@ class ExperimentVOT(object):
         root_dir (string): Root directory of VOT dataset where sequence
             folders exist.
         version (integer, optional): Specify the VOT dataset version. Specify as
-            one of 2013~2018. Default is 2017.
+            one of 2013~2018. Default is 2017. RGBD2019 also supported.
         list_file (string, optional): If provided, only run experiments over
             sequences specified by the file.
         read_image (boolean, optional): If True, return the read PIL image in
@@ -42,7 +42,7 @@ class ExperimentVOT(object):
     def __init__(self, root_dir, version=2017,
                  read_image=True, list_file=None,
                  experiments=('supervised', 'unsupervised', 'realtime'),
-                 result_dir='results', report_dir='reports'):
+                 result_dir='results', report_dir='reports', return_meta=True):
         super(ExperimentVOT, self).__init__()
         if isinstance(experiments, str):
             experiments = (experiments,)
@@ -50,7 +50,7 @@ class ExperimentVOT(object):
                     for e in experiments])
         self.dataset = VOT(
             root_dir, version, anno_type='default',
-            download=True, return_meta=True, list_file=list_file)
+            download=True, return_meta=return_meta, list_file=list_file)
         self.experiments = experiments
         if version == 'LT2018':
             version = '-' + version
@@ -163,15 +163,22 @@ class ExperimentVOT(object):
                 # record results
                 self._record(record_file, boxes, times)
 
+
     def run_unsupervised(self, tracker, visualize=False):
         print('Running unsupervised experiment...')
 
         # loop over the complete dataset
         for s, s_data in enumerate(self.dataset):
             if self.dataset.version == 'RGBD2019':
-                (img_files, depth_files, anno, _) = s_data
+                if self.dataset.return_meta == False:
+                    (img_files, depth_files, anno) = s_data
+                else:
+                    (img_files, depth_files, anno, _) = s_data
             else:
-                (img_files, anno, _) = s_data
+                if self.dataset.return_meta == False:
+                    (img_files,  anno) = s_data
+                else:
+                    (img_files, anno, _) = s_data
                 depth_files = None
             seq_name = self.dataset.seq_names[s]
             print('--Sequence %d/%d: %s' % (s + 1, len(self.dataset), seq_name))
@@ -190,8 +197,8 @@ class ExperimentVOT(object):
                 anno_rects = self.dataset._corner2rect(anno_rects)
 
             # tracking loop
-            boxes, times = tracker.track(
-                img_files, anno_rects[0], depth=depth_files, visualize=visualize)
+            boxes, times, confidence = tracker.track(
+                img_files, anno_rects[0], depth_files=depth_files, visualize=visualize)
             assert len(boxes) == len(anno)
 
             # re-formatting
@@ -199,7 +206,7 @@ class ExperimentVOT(object):
             boxes[0] = [1]
             
             # record results
-            self._record(record_file, boxes, times)
+            self._record(record_file, boxes, times, confidence)
 
     def run_realtime(self, tracker, visualize=False):
         print('Running real-time experiment...')
@@ -343,9 +350,15 @@ class ExperimentVOT(object):
 
             for s, s_data in enumerate(self.dataset):
                 if self.dataset.version == 'RGBD2019':
-                    (img_files, depth_files, anno, meta) = s_data
+                    if self.dataset.return_meta == True:
+                        (img_files, depth_files, anno, meta) = s_data
+                    else:
+                        (img_files, depth_files, anno) = s_data
                 else:
-                    (img_files, anno, meta) = s_data
+                    if self.dataset.return_meta == True:
+                        (img_files, anno, meta) = s_data
+                    else:
+                        (img_files, anno) = s_data
                     depth_files = None
 
                 seq_name = self.dataset.seq_names[s]
@@ -463,6 +476,7 @@ class ExperimentVOT(object):
         print('Performance saved at', report_file)
 
         return performance
+        
 
     def show(self, tracker_names, seq_names=None, play_speed=1,
              experiment='supervised'):
@@ -525,7 +539,8 @@ class ExperimentVOT(object):
                            colors=['w', 'r', 'g', 'b', 'c', 'm', 'y',
                                    'orange', 'purple', 'brown', 'pink'])
 
-    def _record(self, record_file, boxes, times):
+
+    def _record(self, record_file, boxes, times, confidence=None):
         # convert boxes to string
         lines = []
         for box in boxes:
@@ -543,7 +558,7 @@ class ExperimentVOT(object):
         print('  Results recorded at', record_file)
 
         # convert times to string
-        lines = ['%.4f' % t for t in times]
+        lines = ['%.6f' % t for t in times]
         lines = [t.replace('nan', 'NaN') for t in lines]
 
         # record running times
@@ -554,6 +569,20 @@ class ExperimentVOT(object):
             lines = [t + ',' + s for t, s in zip(exist_lines, lines)]
         with open(time_file, 'w') as f:
             f.write(str.join('\n', lines))
+
+        if confidence != None:
+            # convert confidences to string
+            lines = ['%.8f' % c for c in confidence]
+            lines = [t.replace('nan', 'NaN') for t in lines]
+
+            # record confidence scores
+            confidence_file = record_file[:record_file.rfind('_')] + '_001_confidence.value'
+            if os.path.exists(confidence_file):
+                with open(time_file) as f:
+                    exist_lines = f.read().strip().split('\n')
+                lines = [t + ',' + s for t, s in zip(exist_lines, lines)]
+            with open(confidence_file, 'w') as f:
+                f.write(str.join('\n', lines[1:]))
 
     def _check_deterministic(self, exp, tracker_name, seq_name):
         record_dir = os.path.join(
@@ -581,6 +610,6 @@ class ExperimentVOT(object):
                 boxes[ind:ind + self.burnin] = [[0]] * self.burnin
         # calculate polygon ious
         ious = np.array([poly_iou(np.array(a), b, bound)
-                         if len(a) > 1 else np.NaN
+                         if len(a) > 1 and ~np.isnan(b[0]) else np.NaN
                          for a, b in zip(boxes, anno)])
         return ious
